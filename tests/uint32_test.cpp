@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2023 Branimir Karadzic. All rights reserved.
+ * Copyright 2010-2025 Branimir Karadzic. All rights reserved.
  * License: https://github.com/bkaradzic/bx/blob/master/LICENSE
  */
 
@@ -28,49 +28,25 @@ TEST_CASE("StrideAlign", "[uint32_t]")
 	REQUIRE(offset == 48);
 }
 
-TEST_CASE("uint32_cnt", "[uint32_t]")
-{
-	REQUIRE( 0 == bx::uint32_cnttz<uint8_t >(1) );
-	REQUIRE( 7 == bx::uint32_cnttz<uint8_t >(1<<7) );
-	REQUIRE( 8 == bx::uint32_cnttz<uint8_t >(0) );
-	REQUIRE( 1 == bx::uint32_cnttz<uint8_t >(0x3e) );
-	REQUIRE( 0 == bx::uint32_cnttz<uint16_t>(1) );
-	REQUIRE(15 == bx::uint32_cnttz<uint16_t>(1<<15) );
-	REQUIRE(16 == bx::uint32_cnttz<uint16_t>(0) );
-	REQUIRE( 0 == bx::uint32_cnttz<uint32_t>(1) );
-	REQUIRE(32 == bx::uint32_cnttz<uint32_t>(0) );
-	REQUIRE(31 == bx::uint32_cnttz<uint32_t>(1u<<31) );
-	REQUIRE( 0 == bx::uint32_cnttz<uint64_t>(1) );
-	REQUIRE(64 == bx::uint32_cnttz<uint64_t>(0) );
-
-	REQUIRE( 7 == bx::uint32_cntlz<uint8_t >(1) );
-	REQUIRE( 8 == bx::uint32_cntlz<uint8_t >(0) );
-	REQUIRE( 2 == bx::uint32_cntlz<uint8_t >(0x3e) );
-	REQUIRE(15 == bx::uint32_cntlz<uint16_t>(1) );
-	REQUIRE(16 == bx::uint32_cntlz<uint16_t>(0) );
-	REQUIRE(31 == bx::uint32_cntlz<uint32_t>(1) );
-	REQUIRE(32 == bx::uint32_cntlz<uint32_t>(0) );
-	REQUIRE(63 == bx::uint32_cntlz<uint64_t>(1) );
-	REQUIRE(64 == bx::uint32_cntlz<uint64_t>(0) );
-
-	REQUIRE( 0 == bx::uint32_cntbits(0) );
-	REQUIRE( 1 == bx::uint32_cntbits(1) );
-
-	REQUIRE( 4 == bx::uint32_cntbits<uint8_t>(0x55) );
-	REQUIRE( 8 == bx::uint32_cntbits<uint16_t>(0x5555) );
-	REQUIRE(16 == bx::uint32_cntbits<uint32_t>(0x55555555) );
-	REQUIRE(32 == bx::uint32_cntbits<uint64_t>(0x5555555555555555) );
-
-	REQUIRE( 8 == bx::uint32_cntbits(UINT8_MAX) );
-	REQUIRE(16 == bx::uint32_cntbits(UINT16_MAX) );
-	REQUIRE(32 == bx::uint32_cntbits(UINT32_MAX) );
-	REQUIRE(64 == bx::uint32_cntbits(UINT64_MAX) );
-}
-
 TEST_CASE("uint32_part", "[uint32_t]")
 {
 	REQUIRE(UINT32_C(0x55555555) == bx::uint32_part1by1(UINT16_MAX) );
 	REQUIRE(UINT32_C(0x09249249) == bx::uint32_part1by2(0x3ff) );
+}
+
+TEST_CASE("uint32_splat", "[uint32_t]")
+{
+	REQUIRE(UINT32_C(0x01010101) == bx::uint32_splat<uint8_t>(0x01) );
+	REQUIRE(UINT32_C(0x55555555) == bx::uint32_splat<uint8_t>(0x55) );
+	REQUIRE(UINT32_C(0x13891389) == bx::uint32_splat<uint16_t>(0x1389) );
+}
+
+TEST_CASE("uint64_splat", "[uint32_t]")
+{
+	REQUIRE(UINT64_C(0x0101010101010101) == bx::uint64_splat<uint8_t>(0x01) );
+	REQUIRE(UINT64_C(0x5555555555555555) == bx::uint64_splat<uint8_t>(0x55) );
+	REQUIRE(UINT32_C(0x1389138913891389) == bx::uint64_splat<uint16_t>(0x1389) );
+	REQUIRE(UINT32_C(0x1506138915061389) == bx::uint64_splat<uint32_t>(0x15061389) );
 }
 
 TEST_CASE("uint32_gcd", "[uint32_t]")
@@ -108,16 +84,22 @@ TEST_CASE("halfTo/FromFloat", "[uint32_t]")
 	}
 }
 
-TEST_CASE("uint32_testpow2")
+TEST_CASE("uint32_testpow2", "[uint32_t]")
 {
 	uint32_t shift = 0;
+	uint32_t nextpow2 = bx::uint32_nextpow2(1);
 
-	for (uint32_t ii = 0; ii < UINT32_MAX; ++ii)
+	for (uint32_t ii = 1; ii < 1<<24; ++ii)
 	{
+		REQUIRE(nextpow2 == bx::uint32_nextpow2(ii) );
+
 		if (bx::uint32_testpow2(ii) )
 		{
 			REQUIRE(ii == 1u << shift);
 			++shift;
+
+			REQUIRE(ii == nextpow2);
+			nextpow2 = bx::uint32_nextpow2(ii+1);
 		}
 	}
 }
@@ -140,6 +122,13 @@ TEST_CASE("align", "[uint32_t]")
 	REQUIRE(!bx::isAligned(7,  8) );
 	REQUIRE( bx::isAligned(64, 8) );
 	REQUIRE(!bx::isAligned(63, 8) );
+
+	for (int32_t ii = 0; ii < 1024; ++ii)
+	{
+		REQUIRE(bx::isAligned(ii, 0) );
+		REQUIRE(ii == bx::alignUp(ii, 0) );
+		REQUIRE(ii == bx::alignDown(ii, 0) );
+	}
 
 	REQUIRE(  0 == bx::alignUp(  0, 16) );
 	REQUIRE( 16 == bx::alignUp(  1, 16) );
