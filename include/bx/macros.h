@@ -100,8 +100,8 @@ extern "C" void* __cdecl _alloca(size_t _size);
 #define BX_ALIGN_DECL_CACHE_LINE(_decl) BX_ALIGN_DECL(BX_CACHE_LINE_SIZE, _decl)
 
 ///
-#define BX_MACRO_BLOCK_BEGIN for(;;) {
-#define BX_MACRO_BLOCK_END break; }
+#define BX_MACRO_BLOCK_BEGIN do {
+#define BX_MACRO_BLOCK_END } while (false)
 #define BX_NOOP(...) BX_MACRO_BLOCK_BEGIN BX_MACRO_BLOCK_END
 
 ///
@@ -214,7 +214,7 @@ extern "C" void* __cdecl _alloca(size_t _size);
 #	if BX_CONFIG_DEBUG
 #		define BX_ASSERT_LOC _BX_ASSERT_LOC
 #	else
-#		define BX_ASSERT_LOC(_location, ...) BX_MACRO_BLOCK_BEGIN BX_UNUSED(_location) BX_MACRO_BLOCK_END
+#		define BX_ASSERT_LOC(_location, ...) BX_MACRO_BLOCK_BEGIN BX_UNUSED(_location); BX_MACRO_BLOCK_END
 #	endif // BX_CONFIG_DEBUG
 #endif // BX_ASSERT_LOC
 
@@ -230,7 +230,7 @@ extern "C" void* __cdecl _alloca(size_t _size);
 #	if BX_CONFIG_DEBUG
 #		define BX_TRACE_LOC _BX_TRACE_LOC
 #	else
-#		define BX_TRACE_LOC(_location, ...) BX_MACRO_BLOCK_BEGIN BX_UNUSED(_location) BX_MACRO_BLOCK_END
+#		define BX_TRACE_LOC(_location, ...) BX_MACRO_BLOCK_BEGIN BX_UNUSED(_location); BX_MACRO_BLOCK_END
 #	endif // BX_CONFIG_DEBUG
 #endif // BX_TRACE_LOC
 
@@ -246,7 +246,7 @@ extern "C" void* __cdecl _alloca(size_t _size);
 #	if BX_CONFIG_DEBUG
 #		define BX_WARN_LOC _BX_WARN_LOC
 #	else
-#		define BX_WARN_LOC(_location, ...) BX_MACRO_BLOCK_BEGIN BX_UNUSED(_location) BX_MACRO_BLOCK_END
+#		define BX_WARN_LOC(_location, ...) BX_MACRO_BLOCK_BEGIN BX_UNUSED(_location); BX_MACRO_BLOCK_END
 #	endif // BX_CONFIG_DEBUG
 #endif // BX_WARN_LOC
 
