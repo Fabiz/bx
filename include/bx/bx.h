@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2025 Branimir Karadzic. All rights reserved.
+ * Copyright 2010-2026 Branimir Karadzic. All rights reserved.
  * License: https://github.com/bkaradzic/bx/blob/master/LICENSE
  */
 
@@ -174,6 +174,38 @@ namespace bx
 	template<typename Ty>
 	const Ty* addressOf(const void* _ptr, ptrdiff_t _offsetInBytes = 0);
 
+	/// Loads a value of type Ty from an naturally aligned memory location.
+	///
+	/// @param[in] _ptr Pointer to the memory location.
+	/// @returns The loaded value of type Ty.
+	///
+	template<typename Ty>
+	inline Ty loadAligned(const void* _ptr);
+
+	/// Loads a value of type Ty from a potentially unaligned memory location.
+	///
+	/// @param[in] _ptr Pointer to the memory location.
+	/// @returns The loaded value of type Ty.
+	///
+	template<typename Ty>
+	inline Ty loadUnaligned(const void* _ptr);
+
+	/// Stores a value of type Ty to an naturally aligned memory location.
+	///
+	/// @param[out] _ptr Pointer to the destination memory.
+	/// @param[in] _value The value to store.
+	///
+	template<typename Ty>
+	inline void storeAligned(void* _outPtr, const Ty& _value);
+
+	/// Stores a value of type Ty to a potentially unaligned memory location.
+	///
+	/// @param[out] _ptr Pointer to the destination memory.
+	/// @param[in] _value The value to store.
+	///
+	template<typename Ty>
+	inline void storeUnaligned(void* _outPtr, const Ty& _value);
+
 	/// Swap two values.
 	template<typename Ty>
 	void swap(Ty& _a, Ty& _b);
@@ -223,6 +255,16 @@ namespace bx
 	/// Returns a value of type `Ty` by reinterpreting the object representation of `FromT`.
 	template <typename Ty, typename FromT>
 	constexpr Ty bitCast(const FromT& _from);
+
+	/// Performs `static_cast` of value `_from`, and if value doesn't fit result type `Ty` it clamps
+	/// the value to `Ty` min/max.
+	template<typename Ty, typename FromT>
+	constexpr Ty saturateCast(FromT _from);
+
+	/// Performs `static_cast` of value `_from`, and returns true if the value `_from` is
+	/// representable as `Ty`.
+	template<typename Ty, typename FromT>
+	constexpr bool narrowCastTest(Ty* _out, const FromT& _from);
 
 	/// Performs `static_cast` of value `_from`, and in debug build runtime verifies/asserts
 	/// that the value didn't change.

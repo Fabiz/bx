@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2025 Branimir Karadzic. All rights reserved.
+ * Copyright 2010-2026 Branimir Karadzic. All rights reserved.
  * License: https://github.com/bkaradzic/bx/blob/master/LICENSE
  */
 
@@ -13,41 +13,6 @@
 
 bx::AllocatorI* g_allocator;
 
-TEST_CASE("StringLiteral", "[string]")
-{
-	constexpr bx::StringLiteral tmp[] = { "1389", "abvgd", "mac", "pod" };
-
-	REQUIRE(bx::isSorted(tmp, BX_COUNTOF(tmp) ) );
-
-	STATIC_REQUIRE(4 == tmp[0].getLength() );
-	REQUIRE(4 == bx::strLen(tmp[0]) );
-	REQUIRE(0 == bx::strCmp("1389", tmp[0]) );
-
-	STATIC_REQUIRE(5 == tmp[1].getLength() );
-	REQUIRE(5 == bx::strLen(tmp[1]) );
-	REQUIRE(0 == bx::strCmp("abvgd", tmp[1]) );
-
-	STATIC_REQUIRE(3 == tmp[2].getLength() );
-	REQUIRE(3 == bx::strLen(tmp[2]) );
-	REQUIRE(0 == bx::strCmp("mac", tmp[2]) );
-
-	STATIC_REQUIRE(3 == tmp[3].getLength() );
-	REQUIRE(3 == bx::strLen(tmp[3]) );
-	REQUIRE(0 == bx::strCmp("pod", tmp[3]) );
-
-	constexpr bx::StringLiteral copy(tmp[0]);
-
-	STATIC_REQUIRE(4 == copy.getLength() );
-	REQUIRE(4 == bx::strLen(copy) );
-	REQUIRE(0 == bx::strCmp("1389", copy) );
-
-	constexpr bx::StringView sv(tmp[1]);
-
-	REQUIRE(5 == sv.getLength() );
-	REQUIRE(5 == bx::strLen(sv) );
-	REQUIRE("abvgd" == sv);
-}
-
 TEST_CASE("stringPrintfTy", "[string]")
 {
 	std::string test;
@@ -59,10 +24,10 @@ TEST_CASE("prettify", "[string]")
 {
 	char tmp[1024];
 	prettify(tmp, BX_COUNTOF(tmp), 4000, bx::Units::Kilo);
-	REQUIRE(0 == bx::strCmp(tmp, "4.00 kB") );
+	REQUIRE(0 == bx::strCmp(tmp, "4 kB") );
 
-	prettify(tmp, BX_COUNTOF(tmp), 4096, bx::Units::Kibi);
-	REQUIRE(0 == bx::strCmp(tmp, "4.00 KiB") );
+	prettify(tmp, BX_COUNTOF(tmp), 4096, bx::Units::KibiByte);
+	REQUIRE(0 == bx::strCmp(tmp, "4 KiB") );
 }
 
 TEST_CASE("chars", "[string]")
@@ -492,6 +457,47 @@ TEST_CASE("fromString int32_t", "[string]")
 	REQUIRE(testFromString(-21,    "-021") );
 }
 
+TEST_CASE("StringLiteral", "[string]")
+{
+	constexpr bx::StringLiteral tmp[] = { "1389", "abvgd", "mac", "pod" };
+
+	REQUIRE(bx::isSorted(tmp, BX_COUNTOF(tmp) ) );
+
+	STATIC_REQUIRE(4 == tmp[0].getLength() );
+	STATIC_REQUIRE(4 == bx::strLen(tmp[0]) );
+	REQUIRE(0 == bx::strCmp("1389", tmp[0]) );
+
+	STATIC_REQUIRE(5 == tmp[1].getLength() );
+	STATIC_REQUIRE(5 == bx::strLen(tmp[1]) );
+	REQUIRE(0 == bx::strCmp("abvgd", tmp[1]) );
+
+	STATIC_REQUIRE(3 == tmp[2].getLength() );
+	STATIC_REQUIRE(3 == bx::strLen(tmp[2]) );
+	REQUIRE(0 == bx::strCmp("mac", tmp[2]) );
+
+	STATIC_REQUIRE(3 == tmp[3].getLength() );
+	STATIC_REQUIRE(3 == bx::strLen(tmp[3]) );
+	REQUIRE(0 == bx::strCmp("pod", tmp[3]) );
+
+	constexpr bx::StringLiteral copy(tmp[0]);
+	STATIC_REQUIRE(4 == copy.getLength() );
+	REQUIRE(4 == bx::strLen(copy) );
+	REQUIRE(0 == bx::strCmp("1389", copy) );
+
+	constexpr bx::StringView sv(tmp[1]);
+	STATIC_REQUIRE(5 == sv.getLength() );
+	STATIC_REQUIRE(5 == bx::strLen(sv) );
+	STATIC_REQUIRE("abvgd" == sv);
+}
+
+TEST_CASE("StringView constexpr", "[string]")
+{
+	constexpr bx::StringView sv("1389");
+
+	STATIC_REQUIRE(sv == "1389");
+	STATIC_REQUIRE(4  == bx::strLen(sv) );
+}
+
 TEST_CASE("StringView", "[string]")
 {
 	bx::StringView sv("test");
@@ -755,4 +761,38 @@ TEST(tinystl_string_assign)
 		CHECK( 0 == strcmp(s.c_str(), "short") );
 		CHECK( other.size() == 0 );
 	}
+}
+
+bool testFormatHumanNumber(bx::StringView _expected, double _value, int32_t _numFrac, int32_t _bufferSize = 32)
+{
+	char* tmp = (char*)BX_STACK_ALLOC(_bufferSize);
+	int32_t total = bx::formatHumanNumber(tmp, _bufferSize, _value, _numFrac);
+
+	bx::StringView human(tmp, total);
+
+	const bool result = 0 == bx::strCmp(human, _expected);
+
+	if (!result)
+	{
+		DBG(
+			  "expected: '%S' (len: %d), human: '%S' (len: %d)"
+			, &_expected
+			, _expected.getLength()
+			, &human
+			, human.getLength()
+			);
+	}
+
+	return result;
+}
+
+TEST_CASE("formatHumanNumber", "[string]")
+{
+	REQUIRE(testFormatHumanNumber("1,389,983,113.89", 1389983113.891389, 2) );
+	REQUIRE(testFormatHumanNumber("13,899,831.1389", 13899831.1389, 4) );
+	REQUIRE(testFormatHumanNumber("1,389.10", 1389.1, 2) );
+	REQUIRE(testFormatHumanNumber("1,389", 1389.0, 8) );
+	REQUIRE(testFormatHumanNumber("0", 0.0, 2) );
+
+	REQUIRE(testFormatHumanNumber("", 1389983113.891389, 2, 4) );
 }

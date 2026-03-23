@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2025 Branimir Karadzic. All rights reserved.
+ * Copyright 2010-2026 Branimir Karadzic. All rights reserved.
  * License: https://github.com/bkaradzic/bx/blob/master/LICENSE
  */
 
@@ -1093,7 +1093,7 @@ namespace bx
 		return true;
 	}
 
-	bool fromString(int32_t* _out, const StringView& _str)
+	bool fromString(long long* _out, const StringView& _str)
 	{
 		StringView str = strLTrimSpace(_str);
 
@@ -1113,7 +1113,7 @@ namespace bx
 			break;
 		}
 
-		int32_t result = 0;
+		long long result = 0;
 
 		for (ch = *ptr++; isNumeric(ch) && ptr <= term; ch = *ptr++)
 		{
@@ -1122,12 +1122,6 @@ namespace bx
 
 		*_out = neg ? result : -result;
 
-		return true;
-	}
-
-	bool fromString(uint32_t* _out, const StringView& _str)
-	{
-		fromString( (int32_t*)_out, _str);
 		return true;
 	}
 

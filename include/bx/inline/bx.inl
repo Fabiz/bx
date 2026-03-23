@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2025 Branimir Karadzic. All rights reserved.
+ * Copyright 2010-2026 Branimir Karadzic. All rights reserved.
  * License: https://github.com/bkaradzic/bx/blob/master/LICENSE
  */
 
@@ -57,6 +57,81 @@ namespace bx
 	inline const Ty* addressOf(const void* _ptr, ptrdiff_t _offsetInBytes)
 	{
 		return (const Ty*)( (const uint8_t*)_ptr + _offsetInBytes);
+	}
+
+	template<typename Ty>
+	inline Ty loadAligned(const void* _ptr)
+	{
+		static_assert(isTriviallyCopyable<Ty>(), "Ty must be trivially copyable type.");
+
+		return *(const Ty*)_ptr;
+	}
+
+	template<typename Ty>
+	inline Ty loadUnaligned(const void* _ptr)
+	{
+		static_assert(isTriviallyCopyable<Ty>(), "Ty must be trivially copyable type.");
+
+#if BX_COMPILER_GCC || BX_COMPILER_CLANG
+		typedef Ty BX_ATTRIBUTE(aligned(1) ) UnalignedTy;
+		return *(UnalignedTy*)_ptr;
+#else
+		Ty value;
+		memCopy(&value, _ptr, sizeof(Ty) );
+
+		return value;
+#endif // BX_COMPILER_*
+	}
+
+	template<>
+	inline uint32_t loadUnaligned(const void* _ptr)
+	{
+		const uint8_t* data = (const uint8_t*)_ptr;
+
+		return 0
+			| uint32_t(data[3])<<24
+			| uint32_t(data[2])<<16
+			| uint32_t(data[1])<<8
+			| uint32_t(data[0])
+			;
+	}
+
+	template<>
+	inline uint64_t loadUnaligned(const void* _ptr)
+	{
+		const uint8_t* data = (const uint8_t*)_ptr;
+
+		return 0
+			| uint64_t(data[7])<<56
+			| uint64_t(data[6])<<48
+			| uint64_t(data[5])<<40
+			| uint64_t(data[4])<<32
+			| uint64_t(data[3])<<24
+			| uint64_t(data[2])<<16
+			| uint64_t(data[1])<<8
+			| uint64_t(data[0])
+			;
+	}
+
+	template<typename Ty>
+	inline void storeAligned(void* _ptr, const Ty& _value)
+	{
+		static_assert(isTriviallyCopyable<Ty>(), "Ty must be trivially copyable type.");
+
+		*(Ty*)_ptr = _value;
+	}
+
+	template<typename Ty>
+	inline void storeUnaligned(void* _ptr, const Ty& _value)
+	{
+		static_assert(isTriviallyCopyable<Ty>(), "Ty must be trivially copyable type.");
+
+#if BX_COMPILER_GCC || BX_COMPILER_CLANG
+		typedef Ty BX_ATTRIBUTE(aligned(1) ) UnalignedTy;
+		*(UnalignedTy*)_ptr = _value;
+#else
+		memCopy(_ptr, &_value, sizeof(Ty) );
+#endif // BX_COMPILER_*
 	}
 
 	template<typename Ty>
@@ -172,12 +247,75 @@ namespace bx
 	}
 
 	template<typename Ty, typename FromT>
+	requires (isInteger<   Ty>() || isFloatingPoint<   Ty>() )
+		  && (isInteger<FromT>() || isFloatingPoint<FromT>() )
+	inline constexpr Ty saturateCast(FromT _from)
+	{
+		if constexpr (isSame<RemoveCvType<Ty>, RemoveCvType<FromT> >() )
+		{
+			return _from;
+		}
+
+		constexpr Ty mx = max<Ty>();
+
+		if constexpr (isSigned<Ty>() && isSigned<FromT>() )
+		{
+			if constexpr (sizeof(Ty) < sizeof(FromT) )
+			{
+				constexpr FromT mn = min<Ty>();
+
+				if (_from < mn)
+				{
+					return mn;
+				}
+				else if (_from > mx)
+				{
+					return mx;
+				}
+			}
+		}
+		else if constexpr (isSigned<FromT>() )
+		{
+			if (_from < FromT(0) )
+			{
+				return Ty(0);
+			}
+			else if (asUnsigned<FromT>(_from) > mx)
+			{
+				return mx;
+			}
+		}
+		else if (_from > asUnsigned<Ty>(max<Ty>() ) )
+		{
+			return mx;
+		}
+
+		return static_cast<Ty>(_from);
+	}
+
+	template<typename Ty, typename FromT>
+	inline constexpr bool narrowCastTest(Ty* _out, const FromT& _from)
+	{
+		if constexpr (isSame<Ty, FromT>() )
+		{
+			*_out = _from;
+			return true;
+		}
+
+		*_out = static_cast<Ty>(_from);
+		return static_cast<FromT>(*_out) == _from;
+	}
+
+	template<typename Ty, typename FromT>
 	inline Ty narrowCast(const FromT& _from, Location _location)
 	{
-		Ty to = static_cast<Ty>(_from);
-		BX_ASSERT_LOC(_location, static_cast<FromT>(to) == _from
+		Ty to;
+		const bool result = narrowCastTest(&to, _from);
+
+		BX_ASSERT_LOC(_location, result
 			, "bx::narrowCast failed! Value is truncated!"
 			);
+		BX_UNUSED(result);
 		return to;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2025 Branimir Karadzic. All rights reserved.
+ * Copyright 2010-2026 Branimir Karadzic. All rights reserved.
  * License: https://github.com/bkaradzic/bx/blob/master/LICENSE
  */
 
@@ -7,6 +7,7 @@
 #define BX_STRING_H_HEADER_GUARD
 
 #include "allocator.h"
+#include "timer.h"
 
 namespace bx
 {
@@ -15,8 +16,9 @@ namespace bx
 	{
 		enum Enum //!< Units:
 		{
-			Kilo, //!< SI units
-			Kibi, //!< IEC prefix
+			Kilo,
+			KiloByte, //!< SI units
+			KibiByte, //!< IEC prefix
 		};
 	};
 
@@ -32,7 +34,7 @@ namespace bx
 		/// Construct string literal from C-style string literal.
 		///
 		template<int32_t SizeT>
-		constexpr StringLiteral(const char (&str)[SizeT]);
+		constexpr StringLiteral(const char (&_str)[SizeT]);
 
 		/// Returns string length.
 		///
@@ -43,11 +45,11 @@ namespace bx
 		constexpr const char* getCPtr() const;
 
 		///
-		void clear();
+		constexpr void clear();
 
 		/// Returns `true` if string is empty.
 		///
-		bool isEmpty() const;
+		constexpr bool isEmpty() const;
 
 	private:
 		const char* m_ptr;
@@ -61,75 +63,75 @@ namespace bx
 	public:
 		/// Construct default/empty string view.
 		///
-		StringView();
+		constexpr StringView();
 
 		/// Construct string view from string literal.
 		///
 		constexpr StringView(const StringLiteral& _str);
 
 		///
-		StringView(const StringView& _rhs);
+		constexpr StringView(const StringView& _rhs);
 
 		///
-		StringView(const StringView& _rhs, int32_t _start, int32_t _len);
+		constexpr StringView(const StringView& _rhs, int32_t _start, int32_t _len);
 
 		///
-		StringView& operator=(const char* _rhs);
+		constexpr StringView& operator=(const char* _rhs);
 
 		///
-		StringView& operator=(const StringView& _rhs);
+		constexpr StringView& operator=(const StringView& _rhs);
 
 		///
-		StringView(const char* _ptr);
+		constexpr StringView(const char* _ptr);
 
 		///
-		StringView(const char* _ptr, int32_t _len);
+		constexpr StringView(const char* _ptr, int32_t _len);
 
 		///
-		StringView(const char* _ptr, const char* _term);
+		constexpr StringView(const char* _ptr, const char* _term);
 
 		///
-		void set(const char* _ptr);
+		constexpr void set(const char* _ptr);
 
 		///
-		void set(const char* _ptr, int32_t _len);
+		constexpr void set(const char* _ptr, int32_t _len);
 
 		///
-		void set(const char* _ptr, const char* _term);
+		constexpr void set(const char* _ptr, const char* _term);
 
 		///
-		void set(const StringView& _str);
+		constexpr void set(const StringView& _str);
 
 		///
-		void set(const StringView& _str, int32_t _start, int32_t _len);
+		constexpr void set(const StringView& _str, int32_t _start, int32_t _len);
 
 		///
-		void clear();
+		constexpr void clear();
 
 		/// Returns pointer to non-terminated string.
 		///
 		/// @attention Use of this pointer in standard C/C++ functions is not safe. You must use it
 		///   in conjunction with `getTerm()` or getLength()`.
 		///
-		const char* getPtr() const;
+		constexpr const char* getPtr() const;
 
 		/// Returns pointer past last character in string view.
 		///
 		/// @attention Dereferencing this pointer is not safe.
 		///
-		const char* getTerm() const;
+		constexpr const char* getTerm() const;
 
 		/// Returns `true` if string is empty.
 		///
-		bool isEmpty() const;
+		constexpr bool isEmpty() const;
 
 		/// Returns string length.
 		///
-		int32_t getLength() const;
+		constexpr int32_t getLength() const;
 
 		/// Returns `true` if string is zero terminated.
 		///
-		bool is0Terminated() const;
+		constexpr bool is0Terminated() const;
 
 	protected:
 		const char* m_ptr;
@@ -138,13 +140,13 @@ namespace bx
 	};
 
 	/// Compare two string views.
-	bool operator==(const StringView& _lhs, const StringView& _rhs);
+	constexpr bool operator==(const StringView& _lhs, const StringView& _rhs);
 
 	/// Returns true if two string views overlap.
-	bool overlap(const StringView& _a, const StringView& _b);
+	constexpr bool overlap(const StringView& _a, const StringView& _b);
 
 	/// Returns true if string view `_a` contains string view `_b`.
-	bool contain(const StringView& _a, const StringView& _b);
+	constexpr bool contain(const StringView& _a, const StringView& _b);
 
 	/// Fixed capacity string.
 	///
@@ -152,49 +154,58 @@ namespace bx
 	class FixedStringT
 	{
 	public:
-		///
-		FixedStringT();
+		struct Pod
+		{
+			char    storage[MaxCapacityT];
+			int32_t len;
+		};
 
 		///
-		FixedStringT(const char* _str);
+		constexpr FixedStringT();
 
 		///
-		FixedStringT(const StringView& _str);
+		constexpr FixedStringT(const char* _str);
 
 		///
-		~FixedStringT();
+		constexpr FixedStringT(const StringView& _str);
 
 		///
-		void set(const char* _str);
+		constexpr ~FixedStringT();
 
 		///
-		void set(const StringView& _str);
+		constexpr void set(const char* _str);
 
 		///
-		void append(const StringView& _str);
+		constexpr void set(const StringView& _str);
 
 		///
-		void clear();
+		constexpr void append(const StringView& _str);
+
+		///
+		constexpr void clear();
 
 		/// Returns `true` if string is empty.
 		///
-		bool isEmpty() const;
+		constexpr bool isEmpty() const;
 
 		/// Returns string length.
 		///
-		int32_t getLength() const;
+		constexpr int32_t getLength() const;
 
 		/// Returns zero-terminated C string pointer.
 		///
-		const char* getCPtr() const;
+		constexpr const char* getCPtr() const;
 
 		/// Implicitly converts FixedStringT to StringView.
 		///
-		operator StringView() const;
+		constexpr operator StringView() const;
+
+		///
+		///
+		Pod& asPod();
 
 	private:
-		char    m_storage[MaxCapacityT];
-		int32_t m_len;
+		Pod m_pod;
 	};
 
 	///
@@ -342,10 +353,10 @@ namespace bx
 	int32_t strCmpV(const StringView& _lhs, const StringView& _rhs, int32_t _max = INT32_MAX);
 
 	/// Get string length.
-	int32_t strLen(const char* _str, int32_t _max = INT32_MAX);
+	constexpr int32_t strLen(const char* _str, int32_t _max = INT32_MAX);
 
 	/// Get string length.
-	int32_t strLen(const StringView& _str, int32_t _max = INT32_MAX);
+	constexpr int32_t strLen(const StringView& _str, int32_t _max = INT32_MAX);
 
 	/// Copy _num characters from string _src to _dst buffer of maximum _dstSize capacity
 	/// including zero terminator. Copy will be terminated with '\0'.
@@ -450,8 +461,33 @@ namespace bx
 	template <typename Ty>
 	void stringPrintf(Ty& _out, const char* _format, ...);
 
+	/// Format number to human readable representation.
+	///
+	/// @param[out] _out Output string.
+	/// @param[in]  _count Maximum output string count.
+	/// @param[in]  _value Value.
+	/// @param[in]  _numFrac Number of fraction digits.
+	/// @returns Length of output string.
+	///
+	int32_t formatHumanNumber(char* _out, uint32_t _count, double _value, uint8_t _numFrac, const StringView& _unit = "", char _prefix = ' ');
+
+	/// 
+	int32_t formatHumanNumber(char* _out, uint32_t _count, double _value, uint8_t _numFrac, double _unitStep, const StringView& _unit, const StringView& _prefix, uint8_t _basePrefix = 0);
+
+	/// 
+	template<uint16_t MaxCapacityT = 32>
+	FixedStringT<MaxCapacityT> toHuman(uint64_t _value);
+
+	/// 
+	template<uint16_t MaxCapacityT = 32>
+	FixedStringT<MaxCapacityT> toHuman(uint64_t _value, Units::Enum _units, uint8_t _numFrac = 2);
+
+	/// 
+	template<uint16_t MaxCapacityT = 32>
+	FixedStringT<MaxCapacityT> toHuman(Ticks _value, uint8_t _numFrac = 4);
+
 	/// Convert size in bytes to human readable string kibi units.
-	int32_t prettify(char* _out, int32_t _count, uint64_t _value, Units::Enum _units = Units::Kibi);
+	int32_t prettify(char* _out, int32_t _count, uint64_t _value, Units::Enum _units = Units::KibiByte);
 
 	/// Converts bool value to string.
 	int32_t toString(char* _out, int32_t _max, bool _value);
@@ -480,11 +516,35 @@ namespace bx
 	/// Converts string to double value.
 	bool fromString(double* _out, const StringView& _str);
 
+	/// Converts string to 8-bit integer value.
+	bool fromString(int8_t* _out, const StringView& _str);
+
+	/// Converts string to 8-bit unsigned integer value.
+	bool fromString(uint8_t* _out, const StringView& _str);
+
+	/// Converts string to 8-bit integer value.
+	bool fromString(int16_t* _out, const StringView& _str);
+
+	/// Converts string to 8-bit unsigned integer value.
+	bool fromString(uint16_t* _out, const StringView& _str);
+
 	/// Converts string to 32-bit integer value.
 	bool fromString(int32_t* _out, const StringView& _str);
 
 	/// Converts string to 32-bit unsigned integer value.
 	bool fromString(uint32_t* _out, const StringView& _str);
+
+	/// Converts string to
+	bool fromString(long* _out, const StringView& _str);
+
+	/// Converts string to
+	bool fromString(unsigned long* _out, const StringView& _str);
+
+	/// Converts string to 64-bit long long value.
+	bool fromString(long long* _out, const StringView& _str);
+
+	/// Converts string to 64-bit unsigned long long value.
+	bool fromString(unsigned long long* _out, const StringView& _str);
 
 	///
 	class LineReader
