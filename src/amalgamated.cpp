@@ -4,6 +4,7 @@
  */
 
 #include "allocator.cpp"
+#include "bitarray.cpp" // CHANGE(fso) missing upstream (bx 9521d0b); bgfx needs bx::BitArray
 #include "bounds.cpp"
 #include "bx.cpp"
 #include "commandline.cpp"
