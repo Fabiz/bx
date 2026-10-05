@@ -78,6 +78,7 @@ function toolchain(_buildDir, _libDir)
 			{ "linux-ppc64le-gcc",  "Linux (PPC64LE, GCC compiler)"  },
 			{ "linux-ppc64le-clang",  "Linux (PPC64LE, Clang compiler)"  },
 			{ "linux-riscv64-gcc",  "Linux (RISC-V 64, GCC compiler)"  },
+			{ "linux-loongarch64-gcc",  "Linux (LoongArch64, GCC compiler)"  },
 			{ "ios-arm64",       "iOS - ARM64"                },
 			{ "ios-simulator",   "iOS - Simulator"            },
 			{ "tvos-arm64",      "tvOS - ARM64"               },
@@ -239,7 +240,6 @@ function toolchain(_buildDir, _libDir)
 	flags {
 		"Cpp20",
 		"ExtraWarnings",
-		"FloatFast",
 	}
 
 	if _ACTION == "gmake" or _ACTION == "ninja" then
@@ -342,6 +342,9 @@ function toolchain(_buildDir, _libDir)
 		elseif "linux-riscv64-gcc" == _OPTIONS["gcc"] then
 			location (path.join(_buildDir, "projects", _ACTION .. "-linux-riscv64-gcc"))
 
+		elseif "linux-loongarch64-gcc" == _OPTIONS["gcc"] then
+			location (path.join(_buildDir, "projects", _ACTION .. "-linux-loongarch64-gcc"))
+
 		elseif "mingw-gcc" == _OPTIONS["gcc"] then
 			if not os.getenv("MINGW") then
 				print("Set MINGW environment variable.")
@@ -379,6 +382,10 @@ function toolchain(_buildDir, _libDir)
 
 		elseif "osx-x64"   == _OPTIONS["gcc"]
 			or "osx-arm64" == _OPTIONS["gcc"] then
+
+			premake.gcc.cc  = "clang"
+			premake.gcc.cxx = "clang++"
+			premake.gcc.ar  = "ar"
 
 			if os.is("linux") then
 				if not os.getenv("OSXCROSS") then
@@ -430,6 +437,9 @@ function toolchain(_buildDir, _libDir)
 			action.vstudio.windowsTargetPlatformVersion    = windowsPlatform
 			action.vstudio.windowsTargetPlatformMinVersion = windowsPlatform
 		end
+
+		-- Windows on ARM64 is a desktop target for MSVC.
+		platforms { "ARM64" }
 
 		if (_ACTION .. "-clang") == _OPTIONS["vs"] then
 			if "vs2017-clang" == _OPTIONS["vs"] then
@@ -544,7 +554,7 @@ function toolchain(_buildDir, _libDir)
 			"-Wno-tautological-constant-compare",
 		}
 
-	configuration { "vs*", "not NX32", "not NX64" }
+	configuration { "vs*", "not ARM64", "not NX32", "not NX64" }
 		flags {
 			"EnableAVX",
 		}
@@ -586,6 +596,14 @@ function toolchain(_buildDir, _libDir)
 		objdir (path.join(_buildDir, "win64_" .. _ACTION, "obj"))
 		libdirs {
 			path.join(_libDir, "lib/win64_" .. _ACTION),
+		}
+
+	configuration { "ARM64", "vs*" }
+		defines { "_WIN64" }
+		targetdir (path.join(_buildDir, "arm64_" .. _ACTION, "bin"))
+		objdir (path.join(_buildDir, "arm64_" .. _ACTION, "obj"))
+		libdirs {
+			path.join(_libDir, "lib/arm64_" .. _ACTION),
 		}
 
 	configuration { "x32", "vs2017" }
@@ -878,6 +896,10 @@ function toolchain(_buildDir, _libDir)
 			"-Wundef",
 		}
 
+		buildoptions {
+			"-msimd128",
+		}
+
 		linkoptions {
 			"-s MAX_WEBGL_VERSION=2",
 		}
@@ -911,6 +933,20 @@ function toolchain(_buildDir, _libDir)
 			"-Wl,--gc-sections",
 		}
 
+	configuration { "linux-loongarch64*" }
+		buildoptions {
+			"-Wunused-value",
+			"-Wundef",
+			"-march=loongarch64"
+		}
+		links {
+			"rt",
+			"dl",
+		}
+		linkoptions {
+			"-Wl,--gc-sections",
+		}
+
 	configuration { "linux-ppc64le-gcc" }
 		targetdir (path.join(_buildDir, "linux_ppc64le_gcc/bin"))
 		objdir (path.join(_buildDir, "linux_ppc64le_gcc/obj"))
@@ -925,6 +961,11 @@ function toolchain(_buildDir, _libDir)
 		targetdir (path.join(_buildDir, "linux_riscv64_gcc/bin"))
 		objdir (path.join(_buildDir, "linux_riscv64_gcc/obj"))
 		libdirs { path.join(_libDir, "lib/linux_riscv64_gcc") }
+
+	configuration { "linux-loongarch64-gcc" }
+		targetdir (path.join(_buildDir, "linux_loongarch64_gcc/bin"))
+		objdir (path.join(_buildDir, "linux_loongarch64_gcc/obj"))
+		libdirs { path.join(_libDir, "lib/linux_loongarch64_gcc") }
 
 	configuration { "wasm2js" }
 		targetdir (path.join(_buildDir, "wasm2js/bin"))
